@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 import './product.dart';
 
@@ -50,15 +52,53 @@ class Products with ChangeNotifier {
     return _items.firstWhere((prod) => prod.id == id);
   }
 
-  void addProduct(Product product) {
-    final newProduct = Product(
-        id: DateTime.now().toString(),
+  Future<void> addProduct(Product product) async {
+    const url = 'https://flutter-shop-7adb4.firebaseio.com/products.json';
+    try {
+      final response = await http.post(
+        url,
+        body: json.encode({
+          'title': product.title,
+          'description': product.description,
+          'imageUrl': product.imageUrl,
+          'price': product.price,
+          'isFavorite': product.isFavorite,
+        }),
+      );
+      final newProduct = Product(
+        id: json.decode(response.body)['name'],
         title: product.title,
         description: product.description,
         imageUrl: product.imageUrl,
-        price: product.price);
-    _items.add(newProduct);
-    notifyListeners();
+        price: product.price,
+      );
+      _items.add(newProduct);
+      notifyListeners();
+    } catch (error) {
+      print(error);
+      throw error;
+    }
+  }
+
+  Future<void> fetchAndSetProducts() async {
+    const url = 'https://flutter-shop-7adb4.firebaseio.com/products.json';
+    try {
+      final response = await http.get(url);
+      final extractedData = json.decode(response.body) as Map<String, dynamic>;
+      _items = extractedData.entries
+          .map((entry) => Product(
+                id: entry.key,
+                title: entry.value['title'],
+                description: entry.value['description'],
+                price: entry.value['price'],
+                isFavorite: entry.value['isFavorite'],
+                imageUrl: entry.value['imageUrl'],
+              ))
+          .toList();
+      notifyListeners();
+    } catch (error) {
+      throw error;
+    }
   }
 
   void updateProduct(String id, Product newProduct) {
