@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import './cart.dart';
+import 'auth.dart';
 
 class OrderItem {
   final String id;
@@ -21,13 +22,15 @@ class OrderItem {
 
 class Orders with ChangeNotifier {
   List<OrderItem> _orders = [];
+  String _authToken;
+  String _userId;
 
   List<OrderItem> get orders {
     return [..._orders];
   }
 
   Future<void> addOrder(List<CartItem> cartProducts, double total) async {
-    const url = 'https://flutter-shop-7adb4.firebaseio.com/orders.json';
+    final url = 'https://flutter-shop-7adb4.firebaseio.com/userOrders/$_userId.json?auth=$_authToken';
     final timestamp = DateTime.now();
     try {
       final response = await http.post(
@@ -61,7 +64,7 @@ class Orders with ChangeNotifier {
   }
 
   Future<void> fetchAndSetOrders() async {
-    const url = 'https://flutter-shop-7adb4.firebaseio.com/orders.json';
+    final url = 'https://flutter-shop-7adb4.firebaseio.com/userOrders/$_userId.json?auth=$_authToken';
     try {
       final response = await http.get(url);
       final extractedData = json.decode(response.body) as Map<String, dynamic>;
@@ -89,4 +92,11 @@ class Orders with ChangeNotifier {
       throw error;
     }
   }
+
+  Orders updateAuthData(Auth auth) {
+    _authToken = auth.token;
+    _userId = auth.userId;
+    return this;
+  }
+
 }

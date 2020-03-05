@@ -18,12 +18,6 @@ class _OrderItemState extends State<OrderItem> {
   var _expanded = false;
   @override
   Widget build(BuildContext context) {
-        print(widget.order.id);
-
-    print(widget.order.products[0].id);
-
-    print(widget.order.products[0].title);
-
     return Card(
       margin: EdgeInsets.all(10),
       child: Column(
