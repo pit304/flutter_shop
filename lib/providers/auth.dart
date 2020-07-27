@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_shop/tools/firebase_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,7 +34,7 @@ class Auth with ChangeNotifier {
 
   Future<void> authenticate(
       String email, String password, String urlSegment) async {
-    final url = urlSegment + '?key=AIzaSyCQi9M7VrDcS9ER38e67fD5OLAu8Alx-ws';
+    final url = urlSegment + '?key=' + FirebaseConfig.apiKey;
     try {
       final response = await http.post(url,
           body: jsonEncode({
@@ -75,23 +76,24 @@ class Auth with ChangeNotifier {
     return authenticate(email, password, urlSegment);
   }
 
-Future<bool> autologon() async {
-  final prefs = await SharedPreferences.getInstance();
-  if (!prefs.containsKey('userData')) {
-    return false;
+  Future<bool> autologon() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!prefs.containsKey('userData')) {
+      return false;
+    }
+    final extractedUserData =
+        jsonDecode(prefs.getString('userData')) as Map<String, dynamic>;
+    final expiryDate = DateTime.parse(extractedUserData['expiryDate']);
+    if (expiryDate == null || expiryDate.isBefore(DateTime.now())) {
+      return false;
+    }
+    _token = extractedUserData['token'];
+    _userId = extractedUserData['userId'];
+    _expiryDate = expiryDate;
+    notifyListeners();
+    _setAutologoutTimer();
+    return true;
   }
-  final extractedUserData = jsonDecode(prefs.getString('userData')) as Map<String, dynamic>;
-  final expiryDate = DateTime.parse(extractedUserData['expiryDate']);
-  if (expiryDate == null || expiryDate.isBefore(DateTime.now())) {
-    return false;
-  }
-  _token = extractedUserData['token'];
-  _userId = extractedUserData['userId'];
-  _expiryDate = expiryDate;
-  notifyListeners();
-  _setAutologoutTimer();
-  return true;
-}
 
   Future<void> logout() async {
     _token = null;
